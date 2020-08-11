@@ -36,7 +36,7 @@ import re
 import string
 import getpass
 import cvp
-
+import urllib3
 #
 # Needed support functions
 #
@@ -289,6 +289,7 @@ trace = opts.trace
 # Connect and authenticate with CVP server
 #
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 server = cvp.Cvp( host )
 server.authenticate( user , password )
 
