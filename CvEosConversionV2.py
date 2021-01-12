@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 #   Redistributions of source code must retain the above copyright notice,
 #   this list of conditions and the following disclaimer.
@@ -24,7 +25,8 @@
 #
 from cvprac.cvp_client import CvpClient
 from datetime import datetime
-from jsonrpclib import Server
+from time import time, sleep
+from uuid import uuid4
 import argparse, cvp, cvpServices, getpass, hashlib, re, socket, string, ssl, sys, urllib3
 
 
@@ -134,6 +136,12 @@ class cvpApis(object):
             sys.stderr.write('{} {}ERROR{}: {}.\n'.format(timestamp, bcolors.ERROR, bcolors.NORMAL, error))
             sys.exit(1)
 
+    def addChangeControlApproval(self, request):
+        return self.server.addChangeControlApproval(request)
+
+    def getChangeControlStatus(self, request):
+        return self.server.getChangeControlStatus(request)
+
     def getConfiglet(self, configletName):
       return self.server.getConfiglet(configletName)
 
@@ -142,6 +150,12 @@ class cvpApis(object):
 
     def getInventory(self, populateParentContainerKeyMap=True, provisioned=True):
         return self.service.getInventory(populateParentContainerKeyMap, provisioned)
+
+    def startChangeControl(self, request):
+        return self.server.startChangeControl(request)
+
+    def updateChangeControl(self, request):
+        return self.server.updateChangeControl(request)
 
     def updateConfiglet(self, configlet, waitForTaskIds=False):
       return self.server.updateConfiglet(configlet, waitForTaskIds)
@@ -396,10 +410,13 @@ def main():
                         timestamp = datetime.now().replace(microsecond=0)
                         sys.stderr.write('{} {}INFO{}: Updating configlet: {}\n'.format(timestamp, bcolors.BOLD, bcolors.NORMAL, configlet.name))
 
-                    configlet.config = newConfig
+                    timestamp = datetime.now().replace(microsecond=0)
+                    newConfig = ''.join(('! Config syntax updated by CvEosConversionV2.py at ', str(timestamp), '\n', newConfig))
+			
+	            configlet.config = newConfig
 
                     try:
-                        tasks = cvpApis().updateConfiglet(configlet)
+                        tasks = cvpApis().updateConfiglet(configlet, True)
 
                     except cvpServices.CvpError as error:
                         timestamp = datetime.now().replace(microsecond=0)
@@ -407,7 +424,7 @@ def main():
 
                     else:
                         for task in tasks:
-                            pendingTasks.append(int(task))
+                            pendingTasks.append(task.taskId)
 
 
             sys.stderr.write('\n\n\n\n\n')
